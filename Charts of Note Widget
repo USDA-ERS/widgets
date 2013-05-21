@@ -1,0 +1,123 @@
+(function () {
+
+    // Localize jQuery variable
+    var jQuery;
+
+    /******** Load jQuery if not present *********/
+    if (window.jQuery === undefined || window.jQuery.fn.jquery !== '1.9.1') {
+        var script_tag = document.createElement('script');
+        script_tag.setAttribute("type", "text/javascript");
+        script_tag.setAttribute("src",
+            "http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js");
+        if (script_tag.readyState) {
+            script_tag.onreadystatechange = function () { // For old versions of IE
+                if (this.readyState == 'complete' || this.readyState == 'loaded') {
+                    scriptLoadHandler();
+                }
+            };
+        } else {
+            script_tag.onload = scriptLoadHandler;
+        }
+        // Try to find the head, otherwise default to the documentElement
+        (document.getElementsByTagName("head")[0] || document.documentElement).appendChild(script_tag);
+    } else {
+        // The jQuery version on the window is the one we want to use
+        jQuery = window.jQuery;
+        //loadQueryParserPlugin();
+        main();
+    }
+
+    /******** Called once jQuery has loaded ******/
+    function scriptLoadHandler() {
+        // Restore $ and window.jQuery to their previous values and store the
+        // new jQuery in our local jQuery variable
+        jQuery = window.jQuery.noConflict(true);
+        //loadQueryParserPlugin();
+        // Call our main function
+        main();
+    }
+
+    function loadQueryParserPlugin() {
+        var script_tag = document.createElement('script');
+        script_tag.setAttribute("type", "text/javascript");
+        script_tag.setAttribute("src",
+            "http://dev.ers.usda.gov/scripts/jquery-queryParser.min.js");
+        if (script_tag.readyState) {
+            script_tag.onreadystatechange = function () { // For old versions of IE
+                if (this.readyState == 'complete' || this.readyState == 'loaded') {
+                    scriptLoadHandler();
+                }
+            };
+        } else {
+            script_tag.onload = scriptLoadHandler;
+        }
+        (document.getElementsByTagName("head")[0] || document.documentElement).appendChild(script_tag);
+    }
+
+    /******** Main function ********/
+    function main() {
+        jQuery(document).ready(function ($) {
+            /******* Load CSS *******/
+            /**var css_link = $("<link>", {
+                rel: "stylesheet",
+                type: "text/css",
+                href: "style.css"
+            });
+            css_link.appendTo('head'); **/
+            $('<style type="text/css"> #ers_widget_container { text-align: left; width: 302px; border: 1px solid #1e7bbe; padding: 10px; } </style>').appendTo($('head'));
+
+            /******* Load HTML *******/
+            
+            var site_url = "http://www.ers.usda.gov/ImageGen.ashx?image=";
+
+            var script_tag = $('#ers_chart_widget').attr('src');
+            var params = script_tag.split('?')[1];
+            if (typeof params != 'undefined') {
+                var secondOfMultipleParams = params.split('&')[1];
+                if (typeof secondOfMultipleParams != 'undefined') { // '&' exists so both parameters are present
+                    var chartId = secondOfMultipleParams.split('=')[1];
+                    var jsonp_url = "http://api.ers.usda.gov/rest/v1/content/charts?id=" + chartId + "&callback=?";
+                    $.getJSON(jsonp_url, function (data) {
+                        var descriptionField;
+                        for (var i = 0; i < data[0].Properties.length; i++) {
+                            if (data[0].Properties[i].keyField == "description") {
+                                descriptionField = data[0].Properties[i].propertyValueField;
+                            }
+                        }
+                        $('#ers_widget_container').html("<b>" + data[0].Title + "</b> <br/> <a href='http://www.ers.usda.gov/data-products/chart-gallery/detail.aspx?chartId=" + data.Id + "&ref=collection' target='blank'><img src='" + site_url + data[0].Url + "&width=300' border='0' /></a> <br/> " + descriptionField + " <p> Brought to you by USDA's <a href='http://www.ers.usda.gov/data-products/charts-of-note.aspx' target='blank'>Economic Research Service</a></p>");
+                    });
+                }
+                else { // only one parameter exists so need to find which one
+                    var singleParamName = params.split('=')[0];
+
+                    if (singleParamName == 'cId') { // show specific chart
+                        var chartId = params.split('=')[1];
+                        var jsonp_url = "http://api.ers.usda.gov/rest/v1/content/charts?id=" + chartId + "&callback=?";
+                        $.getJSON(jsonp_url, function (data) {
+                            $('#ers_widget_container').html("<b>" + data[0].Title + "</b> <br/> <a href='http://www.ers.usda.gov/data-products/chart-gallery/detail.aspx?chartId=" + data.Id + "&ref=collection' target='blank'><img src='" + site_url + data[0].Url + "&width=300' border='0' /></a> <p> Brought to you by USDA's <a href='http://www.ers.usda.gov/data-products/charts-of-note.aspx' target='blank'>Economic Research Service</a></p>");
+                        });
+                    }
+                    else { // show latest chart with description
+                        var jsonp_url = "http://api.ers.usda.gov/rest/v1/content/charts/collections?alias=chartsOfNote&take=1&callback=?";
+                        $.getJSON(jsonp_url, function (data) {
+                            var descriptionField;
+                            for (var i = 0; i < data[0].Properties.length; i++) {
+                                if (data[0].Properties[i].keyField == "description") {
+                                    descriptionField = data[0].Properties[i].propertyValueField;
+                                }
+                            }
+                            $('#ers_widget_container').html("<b>" + data[0].Title + "</b> <br/> <a href='http://www.ers.usda.gov/data-products/chart-gallery/detail.aspx?chartId=" + data[0].Id + "&ref=collection' target='blank'><img src='" + site_url + data[0].Url + "&width=300' border='0' /></a> <br/> " + descriptionField + " <p> Brought to you by USDA's <a href='http://www.ers.usda.gov/data-products/charts-of-note.aspx' target='blank'>Economic Research Service</a></p>");
+                        });
+                    }
+                }
+            }
+            else { // get latest chart w/o description
+                var jsonp_url = "http://api.ers.usda.gov/rest/v1/content/charts/collections?alias=chartsOfNote&take=1&callback=?";
+                $.getJSON(jsonp_url, function (data) {
+                    $('#ers_widget_container').html("<b>" + data[0].Title + "</b> <br/> <a href='http://www.ers.usda.gov/data-products/chart-gallery/detail.aspx?chartId=" + data[0].Id + "&ref=collection' target='blank'><img src='" + site_url + data[0].Url + "&width=300' border='0' /></a> <p>Brought to you by USDA's <a href='http://www.ers.usda.gov/data-products/charts-of-note.aspx' target='blank'>Economic Research Service</a></p>");
+                });
+            }
+        });
+    }
+
+})(); // We call our anonymous function immediately
