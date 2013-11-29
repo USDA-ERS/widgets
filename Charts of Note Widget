@@ -68,7 +68,6 @@
             $('<style type="text/css"> #ers_widget_container { text-align: left; width: 302px; border: 1px solid #1e7bbe; padding: 10px; } </style>').appendTo($('head'));
 
             /******* Load HTML *******/
-            // Get a specific chart by the id: http://api.ers.usda.gov/REST/v1/charts/details/{ID}/
 
             var site_url = "http://www.ers.usda.gov/ImageGen.ashx?image=";
 
